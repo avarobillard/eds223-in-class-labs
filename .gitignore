@@ -49,3 +49,5 @@ po/*~
 rsconnect/
 
 week1/data/
+
+.DS_Store
