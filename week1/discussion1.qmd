@@ -1,0 +1,45 @@
+---
+title: "discussion1"
+format: html
+---
+```{r}
+library(here)
+library(tidyverse)
+library(sf)
+library(stars)
+library(tmap)
+```
+
+```{r}
+# Read in spatial objects
+ei_points <- st_read(here("week1", "data", "easter_island", "ei_points.gpkg")) |> 
+  filter(type == "volcano")
+ei_elev <- read_stars(here("week1", "data", "easter_island", "ei_elev.tif"))
+ei_borders <- st_read(here("week1", "data", "easter_island", "ei_border.gpkg"))
+ei_roads <- st_read(here("week1", "data", "easter_island", "ei_roads.gpkg"))
+```
+
+```{r}
+# Create a multi-object map with tmap
+tm_shape(ei_borders) +
+  tm_borders() +
+  tm_compass() +
+  tm_scalebar() +
+# Set general map layout options
+  tm_layout(main.title = "Easter Island",
+            bg.color = "lightblue") +
+tm_shape(ei_elev) +
+  tm_raster(col.scale = tm_scale(values = "YlGn"),
+            col.legend = tm_legend("Elevation (m asl)")) +
+tm_shape(ei_points) +
+  tm_symbols(shape = 24, size = 0.4) +
+  tm_text("name", size = 0.5) +
+tm_shape(ei_roads) +
+  tm_lines(lwd = 0.5)
+```
+
+```{r}
+# Create interactive map
+tmap_mode("view")
+```
+
