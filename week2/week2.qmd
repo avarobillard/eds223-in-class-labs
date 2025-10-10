@@ -1,8 +1,8 @@
 ---
 title: "Week 2 Lab"
 subtitle: "Intro to vector data with `sf` and coordinate reference systems"
-author: "Your Name"
-date: last-modified
+author: "Ava Robillard"
+date: 9/9/25
 format:
   html:
     toc: true
@@ -50,6 +50,10 @@ Simple features is a hierarchical data model that represents a wide range of geo
 
 `sf`provides the same functionality that the `sp`, `rgdal`, and `rgeos` packages provided, but is more intuitive because it builds on the tidy data model and works well with the `tidyverse`. `sf` represents spatial objects as "simple feature" objects by storing them as a data frame with the geographic data stored in a special column (usually named `geom` or `geometry`).
 
+`sf` functions start with st_.
+
+st_read(), st_point(), st_polygon(), st_drop_geometry(), st_crs(), st_transform(), etc.
+
 ### Simple features from scratch
 
 Let's start by looking at how we can construct a `sf` object. Typically we will load `sf` objects by reading in data. However, it can be helpful to see how `sf` objects are created from scratch.
@@ -61,6 +65,7 @@ First, we create a geometry for London by supplying a point and coordinate refer
 london_point <- st_point(c(0.1, 51.5))
 
 # Add a CRS
+# simple feature collection
 london_geom <- st_sfc(london_point, crs = 4326)
 ```
 
@@ -83,6 +88,7 @@ london_sf <- st_sf(london_attrib, geometry = london_geom)
 # Check class
 class(london_sf)
 
+# Creates a data frame!
 ```
 
 We can also check out what the CRS looks like:
@@ -166,12 +172,14 @@ st_crs(london_proj)
 This is a lot of information to read, so if we wanted to use this point with our other London point, we need to check to see if they are using the same CRS.
 
 ```{r}
+# Check for same CRS
 st_crs(london_proj) == st_crs(london_sf)
 ```
 
 To transform the CRS of a dataset, we use the `st_transform()` function. In the `crs` argument, we need to specify the coordinate reference system. We can do this by either supplying a CRS code or specifying the CRS of another dataset using the `st_crs()` function.
 
 ```{r}
+# Use st_transform() to change crs
 london_sf_transform <- st_transform(london_sf, crs = st_crs(london_proj))
 ```
 
@@ -194,6 +202,7 @@ Hopefully we're already thinking about how we could build checking coordinate re
 For example, we could add code like the following that transforms the CRS of `dataset2` to match `dataset1` and prints out a warning message.
 
 ```{r}
+# Template code to check and change CRS
 if (st_crs(dataset1) != st_crs(dataset2)){
   warning("coordinate reference systems don't match")
   dataset2 <- st_transform(dataset2, crs = st_crs(dataset1))
@@ -398,27 +407,32 @@ setdiff(coffee_data$name_long, world$name_long)
 We see that one of the issues is that the two data sets use different naming conventions for the Democratic Republic of the Congo. We can use a string matching function to figure out what the DRC is called in the world data set.
 
 ```{r}
-
-
+drc <- stringr::str_subset(world$name_long, "Dem*.+Congo")
 ```
 
 Now we can update the coffee data set with the matching name for the DRC:
 
 ```{r include=TRUE}
-
+coffee_data$name_long[stringr::str_detect(coffee_data$name_long, "Congo")]
 ```
 
 And we can try the inner join again and hopefully the DRC now matches:
 
 ```{r}
+world_coffee_inner <- inner_join(world, coffee_data , by = "name_long")
 
-
+# update warning message conditional to include the mismatch for "others"
+if (nrow(world_coffee_inner) != nrow(coffee_data) & setdiff(coffee_data$name_long, world_coffee_inner$name_long) != "Others") {
+  warning("inner join does not match original data. potential data loss during join")
+}
 ```
 
 Let's visualize what a the inner join did to our spatial object.
 
 ```{r}
-
+tm_shape(world_coffee_inner) +
+  tm_polygons(fill = "coffee_production_2017",
+              fill.legend = tm_legend(title = "Coffee Production (2017)"))
 
 ```
 
@@ -428,7 +442,9 @@ Let's visualize what a the inner join did to our spatial object.
 What happens if we left join a `sf` object onto a data frame?
 
 ```{r include=TRUE}
-
+# Get a data frame!
+coffee_world <- left_join(coffee_data, world, by = "name_long")
+class(coffee_world)
 ```
 
 :::
